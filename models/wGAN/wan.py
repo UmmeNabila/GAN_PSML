@@ -14,7 +14,7 @@ import math
 start_time = time.time()
 
 # Load data
-data = pd.read_csv("/home/unabila/wgan/CAISO_zone_1_.csv", index_col='time')
+data = pd.read_csv("../../data/CAISO_zone_1_.csv", index_col='time')
 
 
 # Move "wind power", "solar power", "load power" to the end of the DataFrame
@@ -39,6 +39,13 @@ ten_days = 1440 * 10 // window_size
 
 train_x, test_x = x[:two_week, :], x[two_week:two_week + ten_days, :]
 train_y, test_y = y[:two_week, :], y[two_week:two_week + ten_days, :]
+
+# Create a DataFrame for test_y
+test_y_df = pd.DataFrame(test_y, columns=['wind_power', 'solar_power', 'load_power'])
+
+
+
+
 # Scale data
 x_scaler = MinMaxScaler(feature_range=(0, 1))
 y_scaler = MinMaxScaler(feature_range=(0, 1))
@@ -137,9 +144,9 @@ train_x = np.concatenate((train_x, VAE_train_x.cpu().detach().numpy()), axis=1)
 test_x = np.concatenate((test_x, VAE_test_x.cpu().detach().numpy()), axis=1)
 
 # Loop through lookback values
-lookback_values = [2*60 // 5, 4*60 // 5, 6*60 // 5, 8*60 // 5, 10*60 // 5, 12*60 // 5]
-#lookback_values = [1, 3, 5]
-lookforward = 144
+#lookback_values = [1*60 // 5, 4*60 // 5, 6*60 // 5, 8*60 // 5, 10*60 // 5, 12*60 // 5]
+lookback_values = [12, 144]
+lookforward = 12
 
 results = []
 
@@ -162,19 +169,20 @@ for lookback in lookback_values:
 
     class Discriminator(nn.Module):
         def __init__(self):
-            super(Discriminator, self).__init__()
-            self.conv1 = nn.Conv1d(lookback+lookforward, 32, kernel_size=3, stride=1, padding=1)
-            self.conv2 = nn.Conv1d(32, 64, kernel_size=3, stride=1, padding=1)
-            self.conv3 = nn.Conv1d(64, 128, kernel_size=3, stride=1, padding=1)
-            self.linear1 = nn.Linear(128 * 3, 220)
-            self.batch1 = nn.BatchNorm1d(220)
+            super().__init__()
+            self.conv1 = nn.Conv1d(lookback+lookforward, 32, kernel_size=5, stride=1, padding='same')
+            self.conv2 = nn.Conv1d(32, 64, kernel_size=5, stride=1, padding='same')
+            self.conv3 = nn.Conv1d(64, 128, kernel_size=5, stride=1, padding='same')
+            
+            # Calculate the output size of the last conv layer 
+            conv_output_size = 128*3 
+            
+            self.linear1 = nn.Linear(conv_output_size, 220)
             self.linear2 = nn.Linear(220, 220)
-            self.batch2 = nn.BatchNorm1d(220)
-            self.linear3 = nn.Linear(220, 1)
+            self.linear3 = nn.Linear(220, 3)
             self.leaky = nn.LeakyReLU(0.01)
             self.relu = nn.ReLU()
-            self.sigmoid = nn.Sigmoid()
-
+    
         def forward(self, x):
             conv1 = self.conv1(x)
             conv1 = self.leaky(conv1)
@@ -182,36 +190,38 @@ for lookback in lookback_values:
             conv2 = self.leaky(conv2)
             conv3 = self.conv3(conv2)
             conv3 = self.leaky(conv3)
-
+            
+            # Flatten the tensor while keeping the batch dimension intact
             flatten_x = conv3.view(conv3.size(0), -1)
-
+            
             out_1 = self.linear1(flatten_x)
             out_1 = self.leaky(out_1)
             out_2 = self.linear2(out_1)
             out_2 = self.relu(out_2)
-            out_3 = self.linear3(out_2)
-            out = self.sigmoid(out_3)
+            out = self.linear3(out_2)
             return out
 
-    # Initialize and train the GAN
+    # Initialize and train the WGAN
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     batch_size = 128
     learning_rate = 0.0001
-    num_epochs = 250
+    num_epochs = 250 ##################
+    critic_iterations = 5
+    weight_clip = 0.01
 
     trainDataloader = DataLoader(TensorDataset(train_x_slide, train_y_gan), batch_size=batch_size, shuffle=False)
 
     modelG = Generator(train_x_slide.shape[2]).to(device)
     modelD = Discriminator().to(device)
 
-    criterion = nn.BCELoss()
-    optimizerG = torch.optim.Adam(modelG.parameters(), lr=learning_rate, betas=(0.0, 0.9))
-    optimizerD = torch.optim.Adam(modelD.parameters(), lr=learning_rate, betas=(0.0, 0.9))
+
+    optimizerG = torch.optim.Adam(modelG.parameters(), lr=learning_rate, betas=(0.0, 0.9), weight_decay=1e-3)
+    optimizerD = torch.optim.Adam(modelD.parameters(), lr=learning_rate, betas=(0.0, 0.9), weight_decay=1e-3)
 
     histG = np.zeros(num_epochs)
     histD = np.zeros(num_epochs)
-
+    
     for epoch in range(num_epochs):
         loss_G = []
         loss_D = []
@@ -219,36 +229,27 @@ for lookback in lookback_values:
             x = x.to(device)
             y = y.to(device)
     
-            # Train Discriminator
             fake_data = modelG(x)
-            fake_data = torch.cat([y[:, :lookback + lookforward - 1 , :], fake_data.reshape(-1, 1, 3)], axis=1) ############################### 3
-    
-            dis_real_output = modelD(y)
-            real_labels = torch.ones_like(dis_real_output).to(device)
-            lossD_real = criterion(dis_real_output, real_labels)
-    
-            dis_fake_output = modelD(fake_data)
-            fake_labels = torch.zeros_like(real_labels).to(device)
-            lossD_fake = criterion(dis_fake_output, fake_labels)
-    
-            lossD = (lossD_real + lossD_fake)
-    
+            fake_data = torch.cat([y[:, :lookback + lookforward - 1, :], fake_data.reshape(-1, 1, 3)], axis=1)  # Adjust for 3 values
+            critic_real = modelD(y)
+            critic_fake = modelD(fake_data)
+            lossD = -(torch.mean(critic_real) - torch.mean(critic_fake))
             modelD.zero_grad()
             lossD.backward(retain_graph=True)
             optimizerD.step()
-            loss_D.append(lossD.item())
     
-            # Train Generator
             output_fake = modelD(fake_data)
-            lossG = criterion(output_fake, real_labels)
+            lossG = -torch.mean(output_fake)
             modelG.zero_grad()
             lossG.backward()
             optimizerG.step()
-            loss_G.append(lossG.item())
     
+            loss_D.append(lossD.item())
+            loss_G.append(lossG.item())
         histG[epoch] = sum(loss_G)
         histD[epoch] = sum(loss_D)
-        print(f'[{epoch + 1}/{num_epochs}] LossD: {sum(loss_D)} LossG: {sum(loss_G)}')
+        print(f'[{epoch + 1}/{num_epochs}] LossD: {sum(loss_D)} LossG:{sum(loss_G)}')    
+
 
     modelG.eval()
     pred_y_test = modelG(test_x_slide.to(device))
@@ -257,7 +258,7 @@ for lookback in lookback_values:
     y_test_pred = y_scaler.inverse_transform(pred_y_test.cpu().detach().numpy())
 
     # Save predictions to CSV
-    pd.DataFrame(y_test_pred).to_csv(f'pred_test_data_wgan_lookback_{lookback}.csv', index=False)
+    pd.DataFrame(y_test_pred).to_csv(f'pred_112test_data_wgan64_lookback_{lookback}.csv', index=False)
 
     # Calculate metrics
     metrics = {}
@@ -278,7 +279,7 @@ for lookback in lookback_values:
         plt.ylabel(param, fontsize=20)
         plt.xlabel('Minutes', fontsize=20)
         plt.legend(loc='upper right')
-        plt.savefig(f'prediction_wgan_lookback_{lookback}_{param.replace(" ", "_")}.png')
+        plt.savefig(f'prediction112_wgan_lookback_{lookback}_{param.replace(" ", "_")}.png')
 
     # Append results for the current lookback
     results.append({
@@ -297,7 +298,7 @@ for lookback in lookback_values:
 
 # Convert results to DataFrame and save to CSV
 results_df = pd.DataFrame(results)
-results_df.to_csv('gan12h_lookback_results.csv', index=False)
+results_df.to_csv('wgan_1h_12h_lookback_results.csv', index=False)
 
 # Print the elapsed time
 end_time = time.time()

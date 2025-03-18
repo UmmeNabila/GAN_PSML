@@ -43,7 +43,7 @@ class GRUmodel(nn.Module):
         return x
 
 # Load data
-data = pd.read_csv("../../../../data/CAISO_zone_1_.csv", index_col='time')
+data = pd.read_csv("../../data/CAISO_zone_1_.csv", index_col='time')
 
 
 # Move "wind power", "solar power", "load power" to the end of the DataFrame
@@ -67,10 +67,8 @@ y = df_smoothed.iloc[:, 8:11].values
 two_week = 1440 * 14 // window_size 
 ten_days = 1440 * 10 // window_size
 
-july = 1440 * 181 // window_size
-
-train_x, test_x = x[:two_week, :], x[july:july + ten_days, :]
-train_y, test_y = y[:two_week, :], y[july:july + ten_days, :]
+train_x, test_x = x[:two_week, :], x[two_week:two_week + ten_days, :]
+train_y, test_y = y[:two_week, :], y[two_week:two_week + ten_days, :]
 
 
 # Scale data
@@ -85,8 +83,8 @@ test_y = y_scaler.transform(test_y)
 
 # Lookback values and lookforward
 #lookback_values = [3, 5]
-lookback_values = [12*60 // 5]
-lookforward = 720 // 5
+lookback_values = [1*60 // 5, 12*60 // 5]
+lookforward = 60 // 5
 
 results = []
 
@@ -126,7 +124,7 @@ for lookback in lookback_values:
     y_test_true = y_scaler.inverse_transform(test_y_slide.cpu().numpy().reshape(-1, 3))
     y_test_pred = y_scaler.inverse_transform(pred_y_test.cpu().detach().numpy())
 
-    pd.DataFrame(y_test_pred).to_csv(f'pred_test_data_w2s_{lookback}_lookback.csv', index=False)
+    pd.DataFrame(y_test_pred).to_csv(f'pred_test_data_112hLF_{lookback}_lookback.csv', index=False)
 
     # Calculate metrics and plot
     metrics = {}
@@ -147,7 +145,7 @@ for lookback in lookback_values:
         plt.ylabel(param, fontsize=20)
         plt.xlabel('Minutes', fontsize=20)
         plt.legend(loc='upper right')
-        plt.savefig(f'prediction_gru_lookfd_1w2s_{lookback}_{param.replace(" ", "_")}.png')
+        plt.savefig(f'prediction_gru_lookfd_112h_{lookback}_{param.replace(" ", "_")}.png')
 
     # Append results for the current lookback
     results.append({
@@ -165,7 +163,7 @@ for lookback in lookback_values:
 
 # Convert results to DataFrame and save to CSV
 results_df = pd.DataFrame(results)
-results_df.to_csv('gru_lookfor_w2s_results.csv', index=False)
+results_df.to_csv('gru_lookfor_112h_results.csv', index=False)
 
 # Print the elapsed time
 end_time = time.time()
