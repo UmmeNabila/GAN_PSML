@@ -18,6 +18,7 @@ conda activate torchgpu
 pip install torch torchvision torchaudio
 # 4. Install other relevant packages
 pip install pandas matplotlib scikit-learn seaborn
+pip install optuna
 ```
 
 ## 📂 Dataset Access
@@ -27,3 +28,16 @@ Due to GitHub's file size limit, the dataset `CAISO_zone_1_.csv` (187 MB) is hos
 👉 [Download CAISO_zone_1_.csv from this link] (https://drive.google.com/file/d/1coOdL7Lq1hBkMSt8t9sRT3f5M7pPv7Jb/view?usp=sharing)
 
 After downloading, place the file in the `data/` folder of this repository.
+
+## 📊 How to generate the results
+
+- The folder `data` contains training data file used by the model scripts to generate results.
+
+-  Go to the folder `models` and run the desired script (e.g., `wGan.py`) to start the training or evaluation process.
+```bash
+cd model/wGAN/
+python wGan.py
+```
+
+Results will be saved automatically in the `results` folder.
+
