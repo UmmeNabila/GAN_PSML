@@ -125,7 +125,7 @@ for lookback in lookback_values:
     y_test_true = y_scaler.inverse_transform(test_y_slide.cpu().numpy().reshape(-1, 3))
     y_test_pred = y_scaler.inverse_transform(pred_y_test.cpu().detach().numpy())
 
-    pd.DataFrame(y_test_pred).to_csv(f'pred_test_data_112hLF_{lookback}_lookback.csv', index=False)
+    pd.DataFrame(y_test_pred).to_csv(f'../../results/pred_test_data_112hLF_{lookback}_lookback.csv', index=False)
 
     # Calculate metrics and plot
     metrics = {}
@@ -146,7 +146,7 @@ for lookback in lookback_values:
         plt.ylabel(param, fontsize=20)
         plt.xlabel('Minutes', fontsize=20)
         plt.legend(loc='upper right')
-        plt.savefig(f'prediction_gru_lookfd_112h_{lookback}_{param.replace(" ", "_")}.png')
+        plt.savefig(f'../../results/prediction_gru_lookfd_112h_{lookback}_{param.replace(" ", "_")}.png')
 
     # Append results for the current lookback
     results.append({
@@ -164,7 +164,7 @@ for lookback in lookback_values:
 
 # Convert results to DataFrame and save to CSV
 results_df = pd.DataFrame(results)
-results_df.to_csv('gru_lookfor_112h_results.csv', index=False)
+results_df.to_csv('../../results/gru_lookfor_112h_results.csv', index=False)
 
 # Print the elapsed time
 end_time = time.time()

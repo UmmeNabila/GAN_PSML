@@ -258,7 +258,7 @@ for lookback in lookback_values:
     y_test_pred = y_scaler.inverse_transform(pred_y_test.cpu().detach().numpy())
 
     # Save predictions to CSV
-    pd.DataFrame(y_test_pred).to_csv(f'pred_test_data_112gan_lookback_{lookback}.csv', index=False)
+    pd.DataFrame(y_test_pred).to_csv(f'../../results/pred_test_data_112gan_lookback_{lookback}.csv', index=False)
 
     # Calculate metrics
     metrics = {}
@@ -279,7 +279,7 @@ for lookback in lookback_values:
         plt.ylabel(param, fontsize=20)
         plt.xlabel('Minutes', fontsize=20)
         plt.legend(loc='upper right')
-        plt.savefig(f'prediction_gan_112lookback_{lookback}_{param.replace(" ", "_")}.png')
+        plt.savefig(f'../../results/prediction_gan_112lookback_{lookback}_{param.replace(" ", "_")}.png')
 
     # Append results for the current lookback
     results.append({
@@ -298,7 +298,7 @@ for lookback in lookback_values:
 
 # Convert results to DataFrame and save to CSV
 results_df = pd.DataFrame(results)
-results_df.to_csv('cgan112h_lookback_results.csv', index=False)
+results_df.to_csv('../../results/cgan112h_lookback_results.csv', index=False)
 
 # Print the elapsed time
 end_time = time.time()

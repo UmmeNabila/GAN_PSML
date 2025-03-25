@@ -315,7 +315,7 @@ def single_lstm_run(X, y, lookback, lookfor, target_feature_idx, scaler_y, load_
         print(f"Feature {k}: RMSE = {rmse:.4f}, MAE = {mae:.4f}")
 
     # Save the inverse-scaled predictions and actual values for comparison
-    np.savetxt("y_pred_inversedays.csv", y_pred_inverse, delimiter=",")
+    np.savetxt("../../results/y_pred_inversedays.csv", y_pred_inverse, delimiter=",")
     #np.savetxt("y_test_inverse.csv", y_test_inverse, delimiter=",")
     print("Inverse-scaled predictions and actual test data saved to 'y_pred_inverse.csv' and 'y_test_inverse.csv'.")
 
