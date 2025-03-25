@@ -83,8 +83,9 @@ test_y = y_scaler.transform(test_y)
 
 # Lookback values and lookforward
 #lookback_values = [3, 5]
+#lookforward = 144  
 lookback_values = [1*60 // 5, 12*60 // 5]
-lookforward = 60 // 5
+lookforward = 60 // 5  # change to 144 for last case
 
 results = []
 

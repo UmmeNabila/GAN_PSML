@@ -139,6 +139,7 @@ test_x = np.concatenate((test_x, VAE_test_x.cpu().detach().numpy()), axis=1)
 # Loop through lookback values
 #lookback_values = [2*60 // 5, 4*60 // 5, 6*60 // 5, 8*60 // 5, 10*60 // 5, 12*60 // 5]
 lookback_values = [12,144]
+#lookforward = 12
 lookforward = 144
 
 results = []
@@ -297,7 +298,7 @@ for lookback in lookback_values:
 
 # Convert results to DataFrame and save to CSV
 results_df = pd.DataFrame(results)
-results_df.to_csv('gan112h_lookback_results.csv', index=False)
+results_df.to_csv('cgan112h_lookback_results.csv', index=False)
 
 # Print the elapsed time
 end_time = time.time()

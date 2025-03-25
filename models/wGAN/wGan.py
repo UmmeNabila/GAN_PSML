@@ -144,7 +144,8 @@ train_x = np.concatenate((train_x, VAE_train_x.cpu().detach().numpy()), axis=1)
 test_x = np.concatenate((test_x, VAE_test_x.cpu().detach().numpy()), axis=1)
 
 # Loop through lookback values
-#lookback_values = [1*60 // 5, 4*60 // 5, 6*60 // 5, 8*60 // 5, 10*60 // 5, 12*60 // 5]
+#lookback_values = [1*60 // 5, 4*60 // 5, 6*60 // 5, 8*60 // 5, 10*60 // 5, 12*60 // 5]\
+#lookforward = 144
 lookback_values = [12, 144]
 lookforward = 12
 

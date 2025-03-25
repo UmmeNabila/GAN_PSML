@@ -362,8 +362,8 @@ if __name__ == "__main__":
     X_train_tensor, y_train_tensor, X_test_tensor, y_test_tensor, _, _, _, scaler_y = pre_fit(input_data, target_data)
 
     # Set dynamic lookback and lookfor windows
-    lookback = 720
-    lookfor = 720
+    lookback = 720  # 60
+    lookfor = 720   #  change according to case requirement
 
     # Execute grid search or single run based on input
     if test_var == 1:
